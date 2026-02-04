@@ -1,0 +1,6 @@
+/* TEAM */
+Developer: AK
+
+/* SITE */
+Built with: Vite, vanilla HTML/CSS/JS
+Hosted on: Cloudflare Pages

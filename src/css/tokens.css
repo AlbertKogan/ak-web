@@ -1,0 +1,41 @@
+:root {
+  /* Colors — dark theme (default) */
+  --color-bg: #0a0a1a;
+  --color-text: #e8e8f0;
+  --color-accent: #00d4aa;
+  --color-accent-hover: #00f0c0;
+  --color-muted: #888899;
+  --color-border: #2a2a3a;
+  --color-selection-bg: #00d4aa;
+  --color-selection-text: #0a0a1a;
+
+  /* Typography */
+  --font-mono: "Space Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  --line-height: 1.7;
+  --max-width: 65ch;
+
+  /* Spacing scale */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  --space-2xl: 8rem;
+
+  /* Focus */
+  --focus-outline: 3px solid var(--color-accent);
+  --focus-offset: 2px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f4f4f8;
+    --color-text: #1a1a2e;
+    --color-accent: #008866;
+    --color-accent-hover: #006b52;
+    --color-muted: #666677;
+    --color-border: #d0d0dd;
+    --color-selection-bg: #008866;
+    --color-selection-text: #f4f4f8;
+  }
+}
