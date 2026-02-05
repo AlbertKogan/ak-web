@@ -11,3 +11,22 @@ if (document.querySelector) {
     });
   }
 }
+
+// 3D head logo — progressive enhancement
+function hasWebGL() {
+  try {
+    const c = document.createElement("canvas");
+    return !!(c.getContext("webgl2") || c.getContext("webgl"));
+  } catch {
+    return false;
+  }
+}
+
+const motionOk = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+if (hasWebGL() && motionOk) {
+  const container = document.getElementById("head-3d");
+  if (container) {
+    import("./head-3d.js").then((m) => m.init(container));
+  }
+}
