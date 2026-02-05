@@ -13,23 +13,32 @@ body {
   margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--space-sm) var(--space-lg);
 }
 
-.site-header__title {
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.site-header__title a {
-  color: var(--color-text);
+.site-header__logo {
+  display: flex;
   text-decoration: none;
 }
 
-.site-header__title a:hover {
-  color: var(--color-accent);
+.head-3d {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+}
+
+.head-3d canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.head-3d.is-active .head-3d__fallback {
+  display: none;
 }
 
 .site-nav__list {
