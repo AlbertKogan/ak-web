@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AK — Developer & Photographer</title>
-    <meta name="description" content="Personal site of AK — developer and photographer." />
-    <meta property="og:title" content="AK — Developer & Photographer" />
-    <meta property="og:description" content="Personal site of AK — developer and photographer." />
+    <title>Albert Kogan — Developer & Photographer</title>
+    <meta name="description" content="Personal site of Albert Kogan — developer and photographer." />
+    <meta property="og:title" content="Albert Kogan — Developer & Photographer" />
+    <meta property="og:description" content="Personal site of Albert Kogan — developer and photographer." />
     <meta property="og:type" content="website" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/css/reset.css" />
     <link rel="stylesheet" href="/src/css/tokens.css" />
     <link rel="stylesheet" href="/src/css/base.css" />
@@ -21,44 +21,53 @@
   <body>
     <a href="#main" class="skip-link">Skip to content</a>
 
-    <header class="site-header" role="banner">
-      <div class="site-header__inner">
-        <a href="/" class="site-header__logo" aria-label="AK — Home">
-          <div class="head-3d" id="head-3d">
-            <img src="/src/assets/head-fallback.svg" alt="" class="head-3d__fallback" width="48" height="48" />
-          </div>
-        </a>
-        <nav class="site-nav" aria-label="Main navigation">
-          <ul class="site-nav__list">
-            <li><a href="/gallery/" class="site-nav__link">Gallery</a></li>
-            <li><a href="/blog/" class="site-nav__link">Blog</a></li>
-          </ul>
-        </nav>
-      </div>
-    </header>
+    <!-- Background effects -->
+    <div class="bg-glow"></div>
+    <div class="scanline"></div>
 
     <main id="main" class="site-main" role="main">
       <div class="site-main__inner">
-        <section class="intro">
-          <h1 class="intro__heading">Hello, I'm AK.</h1>
-          <p class="intro__text">Developer and photographer. I build things for the web and capture the world through a lens.</p>
-        </section>
 
-        <hr class="separator" />
+        <!-- Left: text content -->
+        <div class="hero">
+          <h1 class="hero__heading">
+            <span class="gradient-text">Albert Kogan</span>
+          </h1>
 
-        <nav aria-label="Social links">
-          <ul class="social-links">
-            <li><a href="https://github.com" rel="noopener noreferrer" target="_blank">GitHub</a></li>
-            <li><a href="https://linkedin.com" rel="noopener noreferrer" target="_blank">LinkedIn</a></li>
-            <li><a href="mailto:hello@example.com">Email</a></li>
-          </ul>
-        </nav>
+          <div class="hero__pairs">
+            <div class="pair">
+              <span class="pair__label">Dev</span>
+              <a href="https://github.com" class="pair__link pair__link--cyan" rel="noopener noreferrer" target="_blank">See on GitHub &rarr;</a>
+            </div>
+            <div class="pair">
+              <span class="pair__label">Photo</span>
+              <a href="/gallery/" class="pair__link pair__link--violet">See in Gallery &rarr;</a>
+            </div>
+            <div class="pair">
+              <span class="pair__label">Reach out</span>
+              <div class="pair__links">
+                <a href="https://linkedin.com" class="pair__link pair__link--blue" rel="noopener noreferrer" target="_blank">LinkedIn</a>
+                <span class="pair__sep">/</span>
+                <a href="mailto:hello@example.com" class="pair__link pair__link--amber">Email</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: WebGL 3D head -->
+        <div class="head-container" id="gl-container">
+          <div class="bracket bracket--tl"></div>
+          <div class="bracket bracket--br"></div>
+          <span class="head-label head-label--top">SYSTEM_READY</span>
+          <span class="head-label head-label--bottom">3D_HEAD_ANIM</span>
+        </div>
+
       </div>
     </main>
 
     <footer class="site-footer" role="contentinfo">
       <div class="site-footer__inner">
-        <p>&copy; 2025 AK. All rights reserved.</p>
+        <p>&copy; 2025 AK</p>
       </div>
     </footer>
 
