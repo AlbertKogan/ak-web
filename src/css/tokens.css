@@ -1,18 +1,27 @@
 :root {
   /* Colors — dark theme (default) */
-  --color-bg: #0a0a1a;
-  --color-text: #e8e8f0;
-  --color-accent: #00d4aa;
-  --color-accent-hover: #00f0c0;
-  --color-muted: #888899;
-  --color-border: #2a2a3a;
-  --color-selection-bg: #00d4aa;
-  --color-selection-text: #0a0a1a;
+  --color-bg: #050505;
+  --color-text: #ffffff;
+  --color-muted: #6b7280;
+  --color-dim: #374151;
+  --color-border: rgba(255, 255, 255, 0.05);
+  --color-selection-bg: #22d3ee;
+  --color-selection-text: #000000;
+
+  /* Neon palette */
+  --neon-cyan: #22d3ee;
+  --neon-magenta: #d946ef;
+  --neon-green: #39ff14;
+  --neon-violet: #b44aff;
+  --neon-amber: #f97316;
+  --neon-pink: #ff6ec7;
+  --neon-blue: #60a5fa;
 
   /* Typography */
-  --font-mono: "Space Mono", ui-monospace, "Cascadia Code", "Fira Code", monospace;
+  --font-display: 'Major Mono Display', monospace;
+  --font-mono: 'Space Mono', ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
   --line-height: 1.7;
-  --max-width: 65ch;
+  --max-width: 1400px;
 
   /* Spacing scale */
   --space-xs: 0.25rem;
@@ -23,19 +32,6 @@
   --space-2xl: 8rem;
 
   /* Focus */
-  --focus-outline: 3px solid var(--color-accent);
+  --focus-outline: 3px solid var(--neon-cyan);
   --focus-offset: 2px;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --color-bg: #f4f4f8;
-    --color-text: #1a1a2e;
-    --color-accent: #008866;
-    --color-accent-hover: #006b52;
-    --color-muted: #666677;
-    --color-border: #d0d0dd;
-    --color-selection-bg: #008866;
-    --color-selection-text: #f4f4f8;
-  }
 }
