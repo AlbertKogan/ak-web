@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="6" fill="#0d0d0d"/>
+  <text
+    x="16"
+    y="22"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="15"
+    font-weight="400"
+    fill="#c8c0b4"
+    text-anchor="middle"
+    letter-spacing="1"
+  >AK</text>
+</svg>
