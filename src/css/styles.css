@@ -1,0 +1,176 @@
+/* ─── Tokens ────────────────────────────────────────────────────────────── */
+:root {
+  --background:              #050505;
+  --surface:                 #0e0e0e;
+  --surface-container-low:   #131313;
+  --surface-container:       #191a1a;
+  --surface-container-high:  #252626;
+
+  --primary:                 #d5c5a7;
+  --primary-container:       #51452f;
+  --primary-dim:             #c7b79a;
+  --secondary:               #9f9d9d;
+  --on-surface:              #e7e5e4;
+  --on-surface-variant:      #acabaa;
+  --on-primary:              #4a3f29;
+  --outline-variant:         #484848;
+
+  --font-headline: "Manrope", sans-serif;
+  --font-body:     "Cormorant Garamond", serif;
+  --font-label:    "Inter", sans-serif;
+
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Reset ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── Base ──────────────────────────────────────────────────────────────── */
+html { -webkit-font-smoothing: antialiased; }
+
+body {
+  background-color: transparent;
+  color: var(--on-surface);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  min-height: 100svh;
+  user-select: none;
+  cursor: default;
+}
+
+html {
+  background-color: var(--background);
+}
+
+::selection {
+  background-color: var(--primary-container);
+  color: var(--primary);
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ─── Background Layers ─────────────────────────────────────────────────── */
+
+
+/* ─── Navigation ────────────────────────────────────────────────────────── */
+.site-nav {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+
+.site-nav__wordmark {
+  font-family: var(--font-headline);
+  font-weight: 300;
+  font-size: 10px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+  opacity: 0.3;
+}
+
+/* ─── Main / Hero ───────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero__article {
+  max-width: 42rem;
+  width: 100%;
+  text-align: center;
+}
+
+.hero__text {
+  font-family: var(--font-body);
+  font-size: clamp(1.25rem, 2.2vw, 1.875rem);
+  line-height: 1.65;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: rgba(231, 229, 228, 0.9);
+}
+
+.hero__reveal {
+  color: rgba(159, 157, 157, 0.4);
+}
+
+.hero__trigger {
+  display: inline-block;
+  position: relative;
+  cursor: default;
+}
+
+.hero__trigger-text {
+  font-style: italic;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.hero__trigger:hover .hero__trigger-text {
+  text-decoration: none;
+}
+
+/* ─── Footer Socials ────────────────────────────────────────────────────── */
+.footer-socials {
+  position: fixed;
+  bottom: 6rem;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem 3rem;
+  z-index: 40;
+  padding: 0 2rem;
+  opacity: 0.3;
+  transition: opacity 1000ms var(--ease-standard), filter 1000ms var(--ease-standard);
+}
+
+.footer-socials.is-active {
+  opacity: 1;
+  filter: drop-shadow(0 0 12px rgba(213, 197, 167, 0.1));
+}
+
+.social-link {
+  font-family: var(--font-label);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+  transition: color 500ms var(--ease-standard);
+}
+
+.social-link:hover {
+  color: var(--primary);
+}
+
+.footer-socials.is-active .social-link {
+  color: var(--primary);
+}
+
+/* ─── Date Stamp ────────────────────────────────────────────────────────── */
+.date-stamp {
+  position: fixed;
+  bottom: 3rem;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  font-family: var(--font-label);
+  font-size: 8px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--outline-variant);
+  opacity: 0.3;
+}

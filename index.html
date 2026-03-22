@@ -1,76 +1,49 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Albert Kogan — Developer & Photographer</title>
-    <meta name="description" content="Personal site of Albert Kogan — developer and photographer." />
-    <meta property="og:title" content="Albert Kogan — Developer & Photographer" />
-    <meta property="og:description" content="Personal site of Albert Kogan — developer and photographer." />
-    <meta property="og:type" content="website" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/src/css/reset.css" />
-    <link rel="stylesheet" href="/src/css/tokens.css" />
-    <link rel="stylesheet" href="/src/css/base.css" />
-    <link rel="stylesheet" href="/src/css/layout.css" />
-    <link rel="stylesheet" href="/src/css/components.css" />
-  </head>
-  <body>
-    <a href="#main" class="skip-link">Skip to content</a>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>akogan.dev</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/css/styles.css" />
+</head>
+<body>
 
-    <!-- Background effects -->
-    <div class="bg-glow"></div>
-    <div class="scanline"></div>
 
-    <main id="main" class="site-main" role="main">
-      <div class="site-main__inner">
+  <!-- Navigation -->
+  <nav class="site-nav" aria-label="Site">
+    <span class="site-nav__wordmark">akogan.dev</span>
+  </nav>
 
-        <!-- Left: text content -->
-        <div class="hero">
-          <h1 class="hero__heading">
-            <span class="gradient-text">Albert Kogan</span>
-          </h1>
+  <!-- Hero -->
+  <main class="hero">
+    <article class="hero__article">
+      <p class="hero__text">
+        Hey, I'm Albert. I move around a lot, travel slowly, and tend to pick up new interests wherever I end up.
+        <span class="hero__reveal">
+          This space collects what I build, where I go, and occasionally what I think about it.
+        </span>
+        <br /><br />
+        If something here catches your attention, or you just want to say hello —
+        <span class="hero__trigger">
+          <span class="hero__trigger-text">I'm easy to find.</span>
+        </span>
+      </p>
+    </article>
+  </main>
 
-          <div class="hero__pairs">
-            <div class="pair">
-              <span class="pair__label">Dev</span>
-              <a href="https://github.com" class="pair__link pair__link--cyan" rel="noopener noreferrer" target="_blank">See on GitHub &rarr;</a>
-            </div>
-            <div class="pair">
-              <span class="pair__label">Photo</span>
-              <a href="/gallery/" class="pair__link pair__link--violet">See in Gallery &rarr;</a>
-            </div>
-            <div class="pair">
-              <span class="pair__label">Reach out</span>
-              <div class="pair__links">
-                <a href="https://linkedin.com" class="pair__link pair__link--blue" rel="noopener noreferrer" target="_blank">LinkedIn</a>
-                <span class="pair__sep">/</span>
-                <a href="mailto:hello@example.com" class="pair__link pair__link--amber">Email</a>
-              </div>
-            </div>
-          </div>
-        </div>
+  <!-- Social links -->
+  <footer class="footer-socials" aria-label="Links">
+    <a class="social-link" target="_blank" rel="noopener noreferrer" href="https://github.com/AlbertKogan">GitHub</a>
+    <a class="social-link" target="_blank" rel="noopener noreferrer" href="mailto:hello@akogan.dev">Email</a>
+    <a class="social-link" target="_blank" rel="noopener noreferrer" href="https://instagram.com/albert.kogan">Instagram</a>
+    <a class="social-link" target="_blank" rel="noopener noreferrer" href="https://www.linkedin.com/in/albertkogan/">LinkedIn</a>
+  </footer>
 
-        <!-- Right: WebGL 3D head -->
-        <div class="head-container" id="gl-container">
-          <div class="bracket bracket--tl"></div>
-          <div class="bracket bracket--br"></div>
-          <span class="head-label head-label--top">SYSTEM_READY</span>
-          <span class="head-label head-label--bottom">3D_HEAD_ANIM</span>
-        </div>
 
-      </div>
-    </main>
-
-    <footer class="site-footer" role="contentinfo">
-      <div class="site-footer__inner">
-        <p>&copy; 2025 AK</p>
-      </div>
-    </footer>
-
-    <script type="module" src="/src/js/main.js"></script>
-  </body>
+  <script type="module" src="/src/js/background.js"></script>
+  <script type="module" src="/src/js/main.js"></script>
+</body>
 </html>
