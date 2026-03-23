@@ -124,6 +124,7 @@ function clearBeams(immediate = false) {
   fadeRafs.push(requestAnimationFrame(fadeOut));
 }
 
+
 if (trigger && footerSocials) {
   trigger.addEventListener("mouseenter", () => {
     footerSocials.classList.add("is-active");
