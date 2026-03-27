@@ -28,8 +28,8 @@ export async function putManifest(bucket, albumId, manifest) {
 
 // ── Photo file helpers ────────────────────────────────────────────────────────
 
-export async function stageFile(bucket, chatId, buffer, mimeType) {
-  const key = `staging/${chatId}/pending`;
+export async function stageFile(bucket, chatId, buffer, mimeType, index = 0) {
+  const key = `staging/${chatId}/pending_${index}`;
   await bucket.put(key, buffer, { httpMetadata: { contentType: mimeType } });
   return key;
 }

@@ -10,53 +10,59 @@ import {
 
 export async function finalizeUpload(chatId, state, env) {
   const bot = tg(env.TELEGRAM_BOT_TOKEN);
-  const { stagingKey, ext, albumId, exif, caption, isNewAlbum, newAlbumTitle, newAlbumDescription } = state;
+  const { stagedPhotos, albumId, caption, isNewAlbum, newAlbumTitle, newAlbumDescription } = state;
 
   try {
-    // ── Resolve location from GPS ───────────────────────────────────────────
-    let city = null;
-    if (exif?.gps) {
-      city = await reverseGeocode(exif.gps.lat, exif.gps.lng);
-    }
-
     // ── Load or create manifest ─────────────────────────────────────────────
     let manifest = await getManifest(env.PHOTOS, albumId);
-    const isFirstPhoto = !manifest;
+    const isFirstAlbum = !manifest;
+    const firstPhoto = stagedPhotos[0];
 
     if (!manifest) {
       manifest = {
         id: albumId,
         title: newAlbumTitle ?? albumId,
         description: newAlbumDescription ?? null,
-        date: exif?.dateTaken?.slice(0, 7) ?? null, // YYYY-MM
+        date: firstPhoto?.exif?.dateTaken?.slice(0, 7) ?? null,
         photos: [],
       };
     }
 
-    // ── Determine final filename ────────────────────────────────────────────
-    const num = nextPhotoNumber(manifest);
-    const finalKey = `photos/${albumId}/${num}.${ext}`;
+    const uploadedFiles = [];
 
-    // ── Move staged file to final location ──────────────────────────────────
-    await moveStagedFile(env.PHOTOS, stagingKey, finalKey);
+    // ── Process each photo ──────────────────────────────────────────────────
+    for (const photo of stagedPhotos) {
+      const { stagingKey, ext, exif } = photo;
 
-    // ── Build photo entry ───────────────────────────────────────────────────
-    const photoEntry = {
-      file: `${num}.${ext}`,
-      caption: caption ?? null,
-    };
-    if (exif?.dateTaken) photoEntry.dateTaken = exif.dateTaken;
-    if (exif?.orientation && exif.orientation !== 1) photoEntry.orientation = exif.orientation;
-    if (exif?.gps || city) {
-      photoEntry.location = {
-        ...(exif?.gps ?? {}),
-        ...(city ? { city } : {}),
+      let city = null;
+      if (exif?.gps) {
+        city = await reverseGeocode(exif.gps.lat, exif.gps.lng);
+      }
+
+      const num = nextPhotoNumber(manifest);
+      const finalKey = `photos/${albumId}/${num}.${ext}`;
+
+      await moveStagedFile(env.PHOTOS, stagingKey, finalKey);
+
+      const photoEntry = {
+        file: `${num}.${ext}`,
+        caption: caption ?? null,
       };
-    }
-    if (exif?.camera) photoEntry.camera = exif.camera;
+      if (exif?.dateTaken) photoEntry.dateTaken = exif.dateTaken;
+      if (exif?.orientation && exif.orientation !== 1) photoEntry.orientation = exif.orientation;
+      if (exif?.gps || city) {
+        photoEntry.location = {
+          ...(exif?.gps ?? {}),
+          ...(city ? { city } : {}),
+        };
+      }
+      if (exif?.camera) photoEntry.camera = exif.camera;
 
-    // ── Add photo and sort by date taken ────────────────────────────────────
-    manifest.photos.push(photoEntry);
+      manifest.photos.push(photoEntry);
+      uploadedFiles.push(`${num}.${ext}`);
+    }
+
+    // ── Sort by date taken ──────────────────────────────────────────────────
     manifest.photos.sort((a, b) => {
       if (!a.dateTaken && !b.dateTaken) return 0;
       if (!a.dateTaken) return 1;
@@ -76,18 +82,18 @@ export async function finalizeUpload(chatId, state, env) {
           id: albumId,
           title: newAlbumTitle ?? albumId,
           description: newAlbumDescription ?? null,
-          date: exif?.dateTaken?.slice(0, 7) ?? null,
-          cover: finalKey,
-          coverGps: exif?.gps ?? null,
+          date: firstPhoto?.exif?.dateTaken?.slice(0, 7) ?? null,
+          cover: `photos/${albumId}/${uploadedFiles[0]}`,
+          coverGps: firstPhoto?.exif?.gps ?? null,
           photoCount: 0,
         };
 
     albumEntry.photoCount = manifest.photos.length;
 
-    // First photo in album becomes cover
-    if (isFirstPhoto) {
-      albumEntry.cover = finalKey;
-      albumEntry.coverGps = exif?.gps ?? null;
+    // First batch into a new album sets the cover
+    if (isFirstAlbum) {
+      albumEntry.cover = `photos/${albumId}/${uploadedFiles[0]}`;
+      albumEntry.coverGps = firstPhoto?.exif?.gps ?? null;
     }
 
     if (existingIdx >= 0) {
@@ -103,10 +109,12 @@ export async function finalizeUpload(chatId, state, env) {
 
     // ── Confirm ─────────────────────────────────────────────────────────────
     const albumTitle = manifest.title;
-    const locationNote = city ? ` · ${city}` : '';
-    await bot.send(chatId,
-      `✓ Uploaded to <b>${albumTitle}</b> as ${num}.${ext}${locationNote}`,
-    );
+    const count = stagedPhotos.length;
+    const summary = count === 1
+      ? uploadedFiles[0]
+      : `${count} photos (${uploadedFiles[0]} – ${uploadedFiles[count - 1]})`;
+
+    await bot.send(chatId, `✓ Uploaded to <b>${albumTitle}</b>: ${summary}`);
 
   } catch (err) {
     console.error('finalizeUpload error:', err);

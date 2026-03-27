@@ -3,6 +3,13 @@ import { getState, setState } from '../lib/state.js';
 import { slugify } from '../lib/r2.js';
 import { finalizeUpload } from './finalize.js';
 
+function captionPrompt(state) {
+  const count = state.stagedPhotos?.length ?? 1;
+  return count > 1
+    ? `Caption for all ${count} photos? (or /skip)`
+    : 'Caption? (or /skip)';
+}
+
 export async function handleText(update, env) {
   const msg = update.message;
   const chatId = String(msg.chat.id);
@@ -38,7 +45,7 @@ export async function handleText(update, env) {
       step: 'awaiting_caption',
       newAlbumDescription: description,
     });
-    await bot.send(chatId, 'Caption? (or /skip)', {
+    await bot.send(chatId, captionPrompt(state), {
       reply_markup: { inline_keyboard: [[{ text: 'Skip', callback_data: 'caption:skip' }]] },
     });
     return;

@@ -26,7 +26,7 @@ export async function handleCallback(update, env) {
     }
 
     await setState(env.UPLOAD_STATE, chatId, { ...state, step: 'awaiting_caption', albumId });
-    await bot.send(chatId, 'Caption? (or /skip)', {
+    await bot.send(chatId, captionPrompt(state), {
       reply_markup: { inline_keyboard: [[{ text: 'Skip', callback_data: 'caption:skip' }]] },
     });
     return;
@@ -34,8 +34,6 @@ export async function handleCallback(update, env) {
 
   // ── Caption skip ─────────────────────────────────────────────────────────
   if (data === 'caption:skip' && state.step === 'awaiting_caption') {
-    await setState(env.UPLOAD_STATE, chatId, { ...state, caption: null });
-    // Trigger upload via a synthetic "finalize" — import here to avoid circular
     const { finalizeUpload } = await import('./finalize.js');
     await finalizeUpload(chatId, { ...state, caption: null }, env);
     return;
@@ -48,8 +46,15 @@ export async function handleCallback(update, env) {
       step: 'awaiting_caption',
       newAlbumDescription: null,
     });
-    await bot.send(chatId, 'Caption? (or /skip)', {
+    await bot.send(chatId, captionPrompt(state), {
       reply_markup: { inline_keyboard: [[{ text: 'Skip', callback_data: 'caption:skip' }]] },
     });
   }
+}
+
+function captionPrompt(state) {
+  const count = state.stagedPhotos?.length ?? 1;
+  return count > 1
+    ? `Caption for all ${count} photos? (or /skip)`
+    : 'Caption? (or /skip)';
 }

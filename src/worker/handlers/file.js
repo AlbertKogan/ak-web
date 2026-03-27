@@ -1,5 +1,5 @@
 import { tg } from '../lib/telegram.js';
-import { setState } from '../lib/state.js';
+import { getState, setState } from '../lib/state.js';
 import { extractExif } from '../lib/exif.js';
 import { stageFile, getIndex, suggestAlbums } from '../lib/r2.js';
 
@@ -7,6 +7,7 @@ export async function handleFile(update, env) {
   const msg = update.message;
   const chatId = String(msg.chat.id);
   const bot = tg(env.TELEGRAM_BOT_TOKEN);
+  const groupId = msg.media_group_id ?? null;
 
   // Reject compressed photos — quality is lost
   if (msg.photo) {
@@ -25,8 +26,6 @@ export async function handleFile(update, env) {
     return;
   }
 
-  await bot.send(chatId, '⏳ Processing...');
-
   // Download from Telegram
   const fileUrl = await bot.getFileUrl(doc.file_id);
   const fileRes = await fetch(fileUrl);
@@ -34,23 +33,33 @@ export async function handleFile(update, env) {
 
   // Extract EXIF (gracefully handles missing data)
   const exif = await extractExif(buffer);
-
-  // Stage in R2
-  const stagingKey = await stageFile(env.PHOTOS, chatId, buffer, mimeType);
-
-  // Determine file extension
   const ext = doc.file_name?.split('.').pop()?.toLowerCase() ?? 'jpg';
 
-  // Save state
+  // ── Media group continuation: stage silently ───────────────────────────────
+  if (groupId) {
+    const existingState = await getState(env.UPLOAD_STATE, chatId);
+    if (existingState?.groupId === groupId) {
+      const index = existingState.stagedPhotos.length;
+      const stagingKey = await stageFile(env.PHOTOS, chatId, buffer, mimeType, index);
+      await setState(env.UPLOAD_STATE, chatId, {
+        ...existingState,
+        stagedPhotos: [...existingState.stagedPhotos, { stagingKey, ext, exif }],
+      });
+      return; // no prompt — first photo already asked
+    }
+  }
+
+  // ── First (or only) photo — stage and prompt ───────────────────────────────
+  await bot.send(chatId, '⏳ Processing...');
+  const stagingKey = await stageFile(env.PHOTOS, chatId, buffer, mimeType, 0);
+
   await setState(env.UPLOAD_STATE, chatId, {
     step: 'awaiting_album',
-    stagingKey,
-    fileName: doc.file_name ?? `photo.${ext}`,
-    ext,
-    exif,
+    groupId,
+    stagedPhotos: [{ stagingKey, ext, exif }],
   });
 
-  // Build album keyboard
+  // Build album keyboard using first photo's GPS
   const index = await getIndex(env.PHOTOS);
   const suggested = exif.gps
     ? suggestAlbums(index, exif.gps.lat, exif.gps.lng)
