@@ -30,9 +30,9 @@ async function handleWebhook(request, env) {
     update.callback_query?.from?.id ??
     '',
   );
-  console.log(`senderId=${senderId} expected=${String(env.TELEGRAM_CHAT_ID)}`);
-  if (senderId !== String(env.TELEGRAM_CHAT_ID)) {
-    return new Response('Unauthorized', { status: 200 }); // 200 to stop Telegram retries
+  if (senderId !== String(env.ALLOWED_USER_ID)) {
+    // Return 200 so Telegram doesn't retry — we just silently ignore unknown senders
+    return new Response('Ignored');
   }
 
   try {
