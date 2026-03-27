@@ -4,6 +4,7 @@ main = "src/worker/index.js"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 
 [[r2_buckets]]
 binding = "PHOTOS"
