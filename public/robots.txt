@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://akogan.dev/sitemap.xml
