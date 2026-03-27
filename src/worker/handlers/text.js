@@ -4,7 +4,7 @@ import { slugify } from '../lib/r2.js';
 import { finalizeUpload } from './finalize.js';
 
 function captionPrompt(state) {
-  const count = state.stagedPhotos?.length ?? 1;
+  const count = state.photoCount ?? 1;
   return count > 1
     ? `Caption for all ${count} photos? (or /skip)`
     : 'Caption? (or /skip)';

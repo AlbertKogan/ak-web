@@ -7,6 +7,7 @@ export async function handleFile(update, env) {
   const msg = update.message;
   const chatId = String(msg.chat.id);
   const bot = tg(env.TELEGRAM_BOT_TOKEN);
+  const doc = msg.document;
   const groupId = msg.media_group_id ?? null;
 
   // Reject compressed photos — quality is lost
@@ -17,7 +18,6 @@ export async function handleFile(update, env) {
     return;
   }
 
-  const doc = msg.document;
   if (!doc) return;
 
   const mimeType = doc.mime_type ?? 'image/jpeg';
@@ -31,32 +31,39 @@ export async function handleFile(update, env) {
   const fileRes = await fetch(fileUrl);
   const buffer = await fileRes.arrayBuffer();
 
-  // Extract EXIF (gracefully handles missing data)
   const exif = await extractExif(buffer);
   const ext = doc.file_name?.split('.').pop()?.toLowerCase() ?? 'jpg';
 
-  // ── Media group continuation: stage silently ───────────────────────────────
+  // sessionId ties together all photos in a batch.
+  // For media groups, use the shared media_group_id so all photos land under the same prefix.
+  // For single photos, use the file_id (unique enough).
+  const sessionId = groupId ?? doc.file_id;
+
+  // Stage the file — key is deterministic from sessionId + file_id, no KV read needed
+  await stageFile(env.PHOTOS, chatId, sessionId, doc.file_id, buffer, mimeType, exif, ext);
+
+  // ── Media group continuation: just stage, no prompt ────────────────────────
   if (groupId) {
     const existingState = await getState(env.UPLOAD_STATE, chatId);
-    if (existingState?.groupId === groupId) {
-      const index = existingState.stagedPhotos.length;
-      const stagingKey = await stageFile(env.PHOTOS, chatId, buffer, mimeType, index);
+    if (existingState?.sessionId === sessionId) {
+      // Another photo in this group — update count only, file is already staged above
       await setState(env.UPLOAD_STATE, chatId, {
         ...existingState,
-        stagedPhotos: [...existingState.stagedPhotos, { stagingKey, ext, exif }],
+        photoCount: (existingState.photoCount ?? 1) + 1,
       });
-      return; // no prompt — first photo already asked
+      return;
     }
   }
 
-  // ── First (or only) photo — stage and prompt ───────────────────────────────
+  // ── First (or only) photo — save state and prompt ──────────────────────────
   await bot.send(chatId, '⏳ Processing...');
-  const stagingKey = await stageFile(env.PHOTOS, chatId, buffer, mimeType, 0);
 
   await setState(env.UPLOAD_STATE, chatId, {
     step: 'awaiting_album',
+    sessionId,
     groupId,
-    stagedPhotos: [{ stagingKey, ext, exif }],
+    photoCount: 1,
+    firstExif: exif, // used for GPS-based album suggestion in prompt
   });
 
   // Build album keyboard using first photo's GPS

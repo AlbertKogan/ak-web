@@ -4,35 +4,45 @@ import { reverseGeocode } from '../lib/geocode.js';
 import {
   getIndex, putIndex,
   getManifest, putManifest,
+  listStagedFiles,
   moveStagedFile,
   nextPhotoNumber,
 } from '../lib/r2.js';
 
 export async function finalizeUpload(chatId, state, env) {
   const bot = tg(env.TELEGRAM_BOT_TOKEN);
-  const { stagedPhotos, albumId, caption, isNewAlbum, newAlbumTitle, newAlbumDescription } = state;
+  const { sessionId, albumId, caption, newAlbumTitle, newAlbumDescription } = state;
 
   try {
+    // ── Discover all staged files for this session ──────────────────────────
+    const stagedFiles = await listStagedFiles(env.PHOTOS, chatId, sessionId);
+
+    if (stagedFiles.length === 0) {
+      await bot.send(chatId, '❌ No staged files found. Please send the photos again.');
+      await clearState(env.UPLOAD_STATE, chatId);
+      return;
+    }
+
     // ── Load or create manifest ─────────────────────────────────────────────
     let manifest = await getManifest(env.PHOTOS, albumId);
     const isFirstAlbum = !manifest;
-    const firstPhoto = stagedPhotos[0];
+    const firstFile = stagedFiles[0];
 
     if (!manifest) {
       manifest = {
         id: albumId,
         title: newAlbumTitle ?? albumId,
         description: newAlbumDescription ?? null,
-        date: firstPhoto?.exif?.dateTaken?.slice(0, 7) ?? null,
+        date: firstFile.exif?.dateTaken?.slice(0, 7) ?? null,
         photos: [],
       };
     }
 
     const uploadedFiles = [];
 
-    // ── Process each photo ──────────────────────────────────────────────────
-    for (const photo of stagedPhotos) {
-      const { stagingKey, ext, exif } = photo;
+    // ── Process each staged photo ───────────────────────────────────────────
+    for (const file of stagedFiles) {
+      const { key, ext, exif } = file;
 
       let city = null;
       if (exif?.gps) {
@@ -42,7 +52,7 @@ export async function finalizeUpload(chatId, state, env) {
       const num = nextPhotoNumber(manifest);
       const finalKey = `photos/${albumId}/${num}.${ext}`;
 
-      await moveStagedFile(env.PHOTOS, stagingKey, finalKey);
+      await moveStagedFile(env.PHOTOS, key, finalKey);
 
       const photoEntry = {
         file: `${num}.${ext}`,
@@ -82,18 +92,17 @@ export async function finalizeUpload(chatId, state, env) {
           id: albumId,
           title: newAlbumTitle ?? albumId,
           description: newAlbumDescription ?? null,
-          date: firstPhoto?.exif?.dateTaken?.slice(0, 7) ?? null,
+          date: firstFile.exif?.dateTaken?.slice(0, 7) ?? null,
           cover: `photos/${albumId}/${uploadedFiles[0]}`,
-          coverGps: firstPhoto?.exif?.gps ?? null,
+          coverGps: firstFile.exif?.gps ?? null,
           photoCount: 0,
         };
 
     albumEntry.photoCount = manifest.photos.length;
 
-    // First batch into a new album sets the cover
     if (isFirstAlbum) {
       albumEntry.cover = `photos/${albumId}/${uploadedFiles[0]}`;
-      albumEntry.coverGps = firstPhoto?.exif?.gps ?? null;
+      albumEntry.coverGps = firstFile.exif?.gps ?? null;
     }
 
     if (existingIdx >= 0) {
@@ -109,7 +118,7 @@ export async function finalizeUpload(chatId, state, env) {
 
     // ── Confirm ─────────────────────────────────────────────────────────────
     const albumTitle = manifest.title;
-    const count = stagedPhotos.length;
+    const count = stagedFiles.length;
     const summary = count === 1
       ? uploadedFiles[0]
       : `${count} photos (${uploadedFiles[0]} – ${uploadedFiles[count - 1]})`;
