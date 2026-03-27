@@ -1,5 +1,14 @@
 name = "ak-web"
 compatibility_date = "2026-03-22"
+main = "src/worker/index.js"
 
 [assets]
 directory = "./dist"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "ak-photos"
+
+[[kv_namespaces]]
+binding = "UPLOAD_STATE"
+id = "05707b0dca0c4fa9847d318aa3e7b7f6"
