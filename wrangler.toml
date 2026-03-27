@@ -2,6 +2,9 @@ name = "ak-web"
 compatibility_date = "2026-03-22"
 main = "src/worker/index.js"
 
+[vars]
+ALLOWED_USER_ID = "271658515"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
