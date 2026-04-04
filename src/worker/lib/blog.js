@@ -247,6 +247,7 @@ export async function renderPostPage(slug, meta, markdownBody) {
 
   return `${blogHead(`${esc(meta.title)} — Albert Kogan`, excerpt, `https://akogan.dev/blog/${slug}`, ogMeta)}
 <body>
+  <script type="module" src="/bg.js"></script>
   ${NAV}
 
   <main class="blog-post">
@@ -289,6 +290,7 @@ export async function renderBlogIndexPage(posts) {
 
   return `${blogHead('Writing — Albert Kogan', 'Notes and thoughts from a life in motion.', 'https://akogan.dev/blog', ogMeta)}
 <body>
+  <script type="module" src="/bg.js"></script>
   ${NAV}
 
   <main class="blog-list">

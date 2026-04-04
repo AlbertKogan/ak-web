@@ -12,14 +12,11 @@ export default {
       return handleWebhook(request, env);
     }
 
-    // ── Blog routes ────────────────────────────────────────────────────────
-    if (request.method === 'GET') {
-      // /blog → listing page
+    // ── Blog routes (gated behind BLOG_ENABLED for local dev/testing) ────
+    if (env.BLOG_ENABLED && request.method === 'GET') {
       if (url.pathname === '/blog' || url.pathname === '/blog/') {
         return serveBlogIndex(env);
       }
-
-      // /blog/{slug} → individual post
       const blogMatch = url.pathname.match(/^\/blog\/([a-z0-9-]+)\/?$/);
       if (blogMatch) {
         return serveBlogPost(blogMatch[1], env);
