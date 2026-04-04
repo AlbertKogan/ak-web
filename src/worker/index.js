@@ -1,6 +1,7 @@
 import { handleFile } from './handlers/file.js';
 import { handleCallback } from './handlers/callback.js';
 import { handleText } from './handlers/text.js';
+import { getRenderedPost, getBlogIndex, renderBlogIndexPage } from './lib/blog.js';
 
 export default {
   async fetch(request, env) {
@@ -9,6 +10,20 @@ export default {
     // ── Telegram webhook ───────────────────────────────────────────────────
     if (request.method === 'POST' && url.pathname === '/telegram-webhook') {
       return handleWebhook(request, env);
+    }
+
+    // ── Blog routes ────────────────────────────────────────────────────────
+    if (request.method === 'GET') {
+      // /blog → listing page
+      if (url.pathname === '/blog' || url.pathname === '/blog/') {
+        return serveBlogIndex(env);
+      }
+
+      // /blog/{slug} → individual post
+      const blogMatch = url.pathname.match(/^\/blog\/([a-z0-9-]+)\/?$/);
+      if (blogMatch) {
+        return serveBlogPost(blogMatch[1], env);
+      }
     }
 
     // ── All other requests → static assets ────────────────────────────────
@@ -48,4 +63,41 @@ async function handleWebhook(request, env) {
   }
 
   return new Response('OK');
+}
+
+// ── Blog serving ──────────────────────────────────────────────────────────────
+
+async function serveBlogPost(slug, env) {
+  const html = await getRenderedPost(env.PHOTOS, slug);
+
+  if (!html) {
+    return new Response('Not found', {
+      status: 404,
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, s-maxage=86400, max-age=3600',
+    },
+  });
+}
+
+async function serveBlogIndex(env) {
+  try {
+    const index = await getBlogIndex(env.PHOTOS);
+    const html = await renderBlogIndexPage(index.posts);
+
+    return new Response(html, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, s-maxage=3600, max-age=300',
+      },
+    });
+  } catch (err) {
+    console.error('serveBlogIndex error:', err);
+    return new Response('Internal error', { status: 500 });
+  }
 }

@@ -20,6 +20,13 @@ export async function handleFile(update, env) {
 
   if (!doc) return;
 
+  // ── Route .md files to the blog handler ────────────────────────────────────
+  const fileName = doc.file_name ?? '';
+  if (fileName.toLowerCase().endsWith('.md')) {
+    const { handleBlogFile } = await import('./blog-file.js');
+    return handleBlogFile(update, env);
+  }
+
   const mimeType = doc.mime_type ?? 'image/jpeg';
   if (!mimeType.startsWith('image/')) {
     await bot.send(chatId, 'Only image files are supported.');
