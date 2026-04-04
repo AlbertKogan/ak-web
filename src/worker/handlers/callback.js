@@ -1,4 +1,4 @@
-import { tg } from '../lib/telegram.js';
+import { tg, captionPrompt } from '../lib/telegram.js';
 import { getState, setState } from '../lib/state.js';
 
 export async function handleCallback(update, env) {
@@ -52,9 +52,3 @@ export async function handleCallback(update, env) {
   }
 }
 
-function captionPrompt(state) {
-  const count = state.photoCount ?? 1;
-  return count > 1
-    ? `Caption for all ${count} photos? (or /skip)`
-    : 'Caption? (or /skip)';
-}

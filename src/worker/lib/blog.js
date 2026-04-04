@@ -1,6 +1,6 @@
 // ── Blog helpers: R2 storage, frontmatter, HTML template ─────────────────────
 
-import { parse as parseMarkdown } from './markdown.js';
+import { parse as parseMarkdown, ParseFlags } from './markdown.js';
 import { slugify } from './r2.js';
 
 // ── R2 index / storage ───────────────────────────────────────────────────────
@@ -226,7 +226,7 @@ const NAV = `
 // ── HTML template ────────────────────────────────────────────────────────────
 
 export async function renderPostPage(slug, meta, markdownBody) {
-  const htmlContent = await parseMarkdown(markdownBody);
+  const htmlContent = await parseMarkdown(markdownBody, { parseFlags: ParseFlags.DEFAULT | ParseFlags.NO_HTML });
   const excerpt = generateExcerpt(markdownBody);
 
   const tagsHtml = meta.tags.length
@@ -245,7 +245,7 @@ export async function renderPostPage(slug, meta, markdownBody) {
   <meta name="twitter:title" content="${esc(meta.title)}" />
   <meta name="twitter:description" content="${esc(excerpt)}" />`;
 
-  return `${blogHead(`${esc(meta.title)} — Albert Kogan`, excerpt, `https://akogan.dev/blog/${slug}`, ogMeta)}
+  return `${blogHead(`${meta.title} — Albert Kogan`, excerpt, `https://akogan.dev/blog/${slug}`, ogMeta)}
 <body>
   <script type="module" src="/bg.js"></script>
   ${NAV}
@@ -270,7 +270,7 @@ export async function renderPostPage(slug, meta, markdownBody) {
 }
 
 export async function renderBlogIndexPage(posts) {
-  const postsHtml = posts
+  const postsHtml = [...posts]
     .sort((a, b) => b.date.localeCompare(a.date))
     .map(post => `
       <a href="/blog/${post.slug}" class="blog-list__item">

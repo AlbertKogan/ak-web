@@ -29,6 +29,12 @@ export default {
 };
 
 async function handleWebhook(request, env) {
+  // ── Auth: verify the request came from Telegram ──────────────────────────
+  const secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token');
+  if (!secret || secret !== env.WEBHOOK_SECRET) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   let update;
   try {
     update = await request.json();
