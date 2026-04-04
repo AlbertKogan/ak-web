@@ -1,47 +1,44 @@
-// ── Markdown-to-HTML wrapper for Cloudflare Workers ─────────────────────────
+// ── Markdown-to-HTML via markdown-wasm (Cloudflare Workers) ──────────────────
 //
 // markdown-wasm's ES module tries to fetch() the .wasm file at runtime,
-// which doesn't work in Cloudflare Workers (no local filesystem).
+// which doesn't work in Workers. Wrangler treats `.wasm` imports as compiled
+// WebAssembly.Module objects, so we import it directly and instantiate
+// it ourselves using the emscripten ABI.
 //
-// Wrangler supports direct .wasm imports in ES module workers — the import
-// gives us a compiled WebAssembly.Module that we can instantiate ourselves.
+// Emscripten ABI notes:
+//   imports:  { a: { a: fn } }  — only one import: a memory-grow callback
+//   exports:  b = Memory, c = __wasm_call_ctors, d = wrealloc, e = wfree,
+//             f = WErrGetCode, g = WErrGetMsg, h = WErrClear, j = parseUTF8
 //
-// This wrapper manually instantiates the wasm module using the same ABI
-// that markdown-wasm's emscripten glue expects, and exposes a simple
-// parse(source, options?) function.
-//
-// Reference: markdown-wasm v1.2.0, md4c-based CommonMark parser.
+// The wasm module creates and exports its own memory (export "b").
+// The grow callback is a closure over `memory`, which we assign after
+// instantiation — safe because grow is only called during parsing, never
+// during instantiation itself.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import wasmModule from '../../../node_modules/markdown-wasm/dist/markdown.wasm';
 
-const PAGE_SIZE = 65536;
-const INITIAL_PAGES = 256; // 16 MB
-
+// Views are rebuilt whenever the wasm memory grows
 let memory;
-let instance;
-let ready = false;
-
-// Views — rebuilt after memory growth
-let HEAP8, HEAPU8, HEAP32, HEAPU32;
+let HEAPU8, HEAP32;
 
 function updateViews() {
   const buf = memory.buffer;
-  HEAP8 = new Int8Array(buf);
   HEAPU8 = new Uint8Array(buf);
   HEAP32 = new Int32Array(buf);
-  HEAPU32 = new Uint32Array(buf);
 }
 
-// The wasm module imports — only a memory-grow function
-const imports = {
+// Import object — the single grow callback closes over `memory`.
+// `memory` is null until init() completes, but wasm never calls this
+// during instantiation, so by the time it fires memory is always set.
+const wasmImports = {
   a: {
     a(requestedBytes) {
-      const oldPages = memory.buffer.byteLength / PAGE_SIZE;
-      const neededPages = Math.ceil((requestedBytes - memory.buffer.byteLength + PAGE_SIZE) / PAGE_SIZE);
-      if (neededPages <= 0) return true;
+      const current = memory.buffer.byteLength;
+      if ((requestedBytes >>> 0) <= current) return true;
+      const pagesNeeded = Math.ceil(((requestedBytes >>> 0) - current) / 65536);
       try {
-        memory.grow(neededPages);
+        memory.grow(pagesNeeded);
         updateViews();
         return true;
       } catch {
@@ -51,115 +48,106 @@ const imports = {
   },
 };
 
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-// Exported wasm functions (bound after instantiation)
 let _parseUTF8, _wrealloc, _wfree, _WErrGetCode, _WErrGetMsg, _WErrClear;
-let _table; // function table for onCodeBlock callback (unused for now)
-let outPtr; // 4-byte scratch for output pointer
+let outPtr;
+let ready = false;
+let initPromise = null;
 
 async function init() {
   if (ready) return;
 
-  memory = new WebAssembly.Memory({ initial: INITIAL_PAGES });
-  updateViews();
-  imports.a.b = memory; // some builds expect memory as import
-
-  // Cloudflare Workers: wasmModule is already a compiled WebAssembly.Module
-  instance = await WebAssembly.instantiate(wasmModule, imports);
-
+  // Wrangler provides wasmModule as a compiled WebAssembly.Module,
+  // so instantiate() returns a WebAssembly.Instance directly.
+  const instance = await WebAssembly.instantiate(wasmModule, wasmImports);
   const ex = instance.exports;
 
-  // Bind to the same export names that markdown-wasm uses
-  memory = ex.b || memory; // wasm may export its own memory
+  // Grab the wasm's own exported memory and set up typed views
+  memory = ex.b;
   updateViews();
 
-  _parseUTF8 = ex.j;
-  _wrealloc = ex.d;
-  _wfree = ex.e;
+  // Bind exported functions
+  _wrealloc    = ex.d;
+  _wfree       = ex.e;
   _WErrGetCode = ex.f;
-  _WErrGetMsg = ex.g;
-  _WErrClear = ex.h;
-  _table = ex.i;
+  _WErrGetMsg  = ex.g;
+  _WErrClear   = ex.h;
+  _parseUTF8   = ex.j;
 
-  // Call __wasm_call_ctors (initialization)
+  // Run emscripten initializers
   if (ex.c) ex.c();
 
-  // Allocate scratch space for the output pointer (4 bytes)
+  // 4-byte scratch buffer for the output pointer
   outPtr = _wrealloc(0, 4);
 
   ready = true;
 }
 
-// Copy bytes into wasm memory, return pointer
-function allocBytes(bytes) {
-  const ptr = _wrealloc(0, bytes.length);
-  HEAPU8.set(bytes, ptr);
-  return ptr;
-}
+// ── ParseFlags ───────────────────────────────────────────────────────────────
 
-// Parse flags — matching markdown-wasm's ParseFlags
-const ParseFlags = {
-  COLLAPSE_WHITESPACE: 0x0001,
-  PERMISSIVE_ATX_HEADERS: 0x0002,
-  PERMISSIVE_URL_AUTO_LINKS: 0x0004,
+export const ParseFlags = {
+  COLLAPSE_WHITESPACE:      0x0001,
+  PERMISSIVE_ATX_HEADERS:   0x0002,
+  PERMISSIVE_URL_AUTO_LINKS:0x0004,
   PERMISSIVE_EMAIL_AUTO_LINKS: 0x0008,
-  NO_INDENTED_CODE_BLOCKS: 0x0010,
-  NO_HTML_BLOCKS: 0x0020,
-  NO_HTML_SPANS: 0x0040,
-  TABLES: 0x0100,
-  STRIKETHROUGH: 0x0200,
+  NO_INDENTED_CODE_BLOCKS:  0x0010,
+  NO_HTML_BLOCKS:           0x0020,
+  NO_HTML_SPANS:            0x0040,
+  TABLES:                   0x0100,
+  STRIKETHROUGH:            0x0200,
   PERMISSIVE_WWW_AUTOLINKS: 0x0400,
-  TASK_LISTS: 0x0800,
-  LATEX_MATH_SPANS: 0x1000,
-  WIKI_LINKS: 0x2000,
-  UNDERLINE: 0x4000,
-  // DEFAULT = COLLAPSE_WHITESPACE | PERMISSIVE_ATX_HEADERS | PERMISSIVE_URL_AUTO_LINKS
-  //         | TABLES | STRIKETHROUGH | TASK_LISTS
+  TASK_LISTS:               0x0800,
+  LATEX_MATH_SPANS:         0x1000,
+  WIKI_LINKS:               0x2000,
+  UNDERLINE:                0x4000,
   DEFAULT: 0x0001 | 0x0002 | 0x0004 | 0x0100 | 0x0200 | 0x0800,
   NO_HTML: 0x0020 | 0x0040,
 };
 
-const RenderFlags = { HTML: 1, XHTML: 2, AllowJSURI: 4 };
+const RenderFlags = { HTML: 1, XHTML: 2 };
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+// ── parse() ──────────────────────────────────────────────────────────────────
 
 /**
- * Parse markdown source to HTML.
+ * Convert markdown source to an HTML string.
  *
- * @param {string} source  Markdown source text
- * @param {object} [opts]  Options: { parseFlags, format }
- * @returns {string}       Rendered HTML
+ * @param {string} source        Markdown text
+ * @param {object} [opts]
+ * @param {number} [opts.parseFlags]   Defaults to ParseFlags.DEFAULT
+ * @param {string} [opts.format]       "html" (default) or "xhtml"
+ * @returns {Promise<string>}
  */
 export async function parse(source, opts = {}) {
-  await init();
+  // Serialize concurrent callers so WASM init only runs once
+  if (!initPromise) initPromise = init();
+  await initPromise;
 
   const parseFlags = opts.parseFlags ?? ParseFlags.DEFAULT;
-  let renderFlags = RenderFlags.HTML;
-  if (opts.format === 'xhtml') renderFlags |= RenderFlags.XHTML;
+  const renderFlags = opts.format === 'xhtml'
+    ? RenderFlags.HTML | RenderFlags.XHTML
+    : RenderFlags.HTML;
 
   const srcBytes = encoder.encode(source);
-  const srcPtr = allocBytes(srcBytes);
+  const srcLen   = srcBytes.length;
+  const srcPtr   = _wrealloc(0, srcLen);
+  HEAPU8.set(srcBytes, srcPtr);
 
-  const outLen = _parseUTF8(srcPtr, srcBytes.length, parseFlags, renderFlags, outPtr, 0);
-
+  const outLen = _parseUTF8(srcPtr, srcLen, parseFlags, renderFlags, outPtr, 0);
   _wfree(srcPtr);
 
+  // Check for wasm-side errors
   if (_WErrGetCode() !== 0) {
-    const errMsg = 'markdown parse error';
     _WErrClear();
-    throw new Error(errMsg);
+    throw new Error('markdown-wasm parse error');
   }
 
-  // Read output pointer from scratch space
+  if (outLen === 0) return '';
+
   const resultPtr = HEAP32[outPtr >> 2];
-  if (!resultPtr || outLen === 0) return '';
-
-  const html = decoder.decode(HEAPU8.slice(resultPtr, resultPtr + outLen));
-
-  // Free the output buffer
+  const html = decoder.decode(HEAPU8.subarray(resultPtr, resultPtr + outLen));
   _wfree(resultPtr);
 
   return html;
 }
-
-export { ParseFlags };
