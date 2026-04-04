@@ -1,14 +1,7 @@
-import { tg } from '../lib/telegram.js';
+import { tg, captionPrompt } from '../lib/telegram.js';
 import { getState, setState } from '../lib/state.js';
 import { slugify } from '../lib/r2.js';
 import { finalizeUpload } from './finalize.js';
-
-function captionPrompt(state) {
-  const count = state.photoCount ?? 1;
-  return count > 1
-    ? `Caption for all ${count} photos? (or /skip)`
-    : 'Caption? (or /skip)';
-}
 
 export async function handleText(update, env) {
   const msg = update.message;

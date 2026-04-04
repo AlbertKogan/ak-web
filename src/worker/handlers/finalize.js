@@ -6,7 +6,6 @@ import {
   getManifest, putManifest,
   listStagedFiles,
   moveStagedFile,
-  nextPhotoNumber,
 } from '../lib/r2.js';
 
 export async function finalizeUpload(chatId, state, env) {
@@ -25,7 +24,6 @@ export async function finalizeUpload(chatId, state, env) {
 
     // ── Load or create manifest ─────────────────────────────────────────────
     let manifest = await getManifest(env.PHOTOS, albumId);
-    const isFirstAlbum = !manifest;
     const firstFile = stagedFiles[0];
 
     if (!manifest) {
@@ -39,17 +37,18 @@ export async function finalizeUpload(chatId, state, env) {
     }
 
     const uploadedFiles = [];
+    const basePhotoCount = manifest?.photos?.length ?? 0;
 
     // ── Process each staged photo ───────────────────────────────────────────
-    for (const file of stagedFiles) {
-      const { key, ext, exif } = file;
+    for (let i = 0; i < stagedFiles.length; i++) {
+      const { key, ext, exif } = stagedFiles[i];
 
       let city = null;
       if (exif?.gps) {
         city = await reverseGeocode(exif.gps.lat, exif.gps.lng);
       }
 
-      const num = nextPhotoNumber(manifest);
+      const num = String(basePhotoCount + i + 1).padStart(3, '0');
       const finalKey = `photos/${albumId}/${num}.${ext}`;
 
       await moveStagedFile(env.PHOTOS, key, finalKey);
@@ -99,11 +98,6 @@ export async function finalizeUpload(chatId, state, env) {
         };
 
     albumEntry.photoCount = manifest.photos.length;
-
-    if (isFirstAlbum) {
-      albumEntry.cover = `photos/${albumId}/${uploadedFiles[0]}`;
-      albumEntry.coverGps = firstFile.exif?.gps ?? null;
-    }
 
     if (existingIdx >= 0) {
       index.albums[existingIdx] = albumEntry;

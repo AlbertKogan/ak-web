@@ -1,3 +1,10 @@
+export function captionPrompt(state) {
+  const count = state.photoCount ?? 1;
+  return count > 1
+    ? `Caption for all ${count} photos? (or /skip)`
+    : 'Caption? (or /skip)';
+}
+
 const api = (token, method, body) =>
   fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
