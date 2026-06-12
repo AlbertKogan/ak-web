@@ -1,0 +1,12 @@
+{
+  // Show snippet suggestions at the top of the autocomplete list in markdown
+  "[markdown]": {
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.quickSuggestions": {
+      "other": "on",
+      "comments": "off",
+      "strings": "off"
+    },
+    "editor.snippetSuggestions": "top"
+  }
+}

@@ -2,6 +2,89 @@
 
 import { parse as parseMarkdown, ParseFlags } from './markdown.js';
 import { slugify } from './r2.js';
+import { sanitizeFilename, guessContentType, rewriteImageRefs } from './post-images.js';
+
+// ── Publish errors ───────────────────────────────────────────────────────────
+// Thrown for caller-fixable problems (bad frontmatter, empty body). Carries a
+// `code` so front-ends can tailor their messaging.
+export class PublishError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = 'PublishError';
+    this.code = code;
+  }
+}
+
+// ── Publish core ─────────────────────────────────────────────────────────────
+// Single source of truth for publishing a post. Used by the Telegram .md
+// handler (images: []) and the HTTP publish API (images: [...]).
+//
+// images: [{ filename, contentType, bytes (ArrayBuffer|Uint8Array) }]
+export async function publishPost(bucket, { rawMarkdown, images = [] }) {
+  const { meta, body } = parseFrontmatter(rawMarkdown);
+
+  if (!meta.title) {
+    throw new PublishError('Missing title in frontmatter.', 'NO_TITLE');
+  }
+  if (!body.trim()) {
+    throw new PublishError('Post body is empty.', 'EMPTY_BODY');
+  }
+
+  const slug = slugify(meta.title);
+  if (!slug) {
+    throw new PublishError('Title must contain at least one letter or number.', 'BAD_TITLE');
+  }
+
+  // ── Store post-local images under blog/{slug}/img/ ─────────────────────────
+  const imageMap = {};
+  for (const img of images) {
+    const safe = sanitizeFilename(img.filename);
+    if (!safe) continue;
+    await bucket.put(`blog/${slug}/img/${safe}`, img.bytes, {
+      httpMetadata: { contentType: img.contentType || guessContentType(safe) },
+    });
+    imageMap[safe] = `/blog/${slug}/img/${safe}`;
+  }
+
+  // ── Rewrite local image refs, then render ──────────────────────────────────
+  const renderedBody = rewriteImageRefs(body, imageMap);
+  const html = await renderPostPage(slug, meta, renderedBody);
+  const excerpt = generateExcerpt(body);
+
+  await putPost(bucket, slug, rawMarkdown, html);
+
+  // ── Update blog index ──────────────────────────────────────────────────────
+  const index = await getBlogIndex(bucket);
+  const existingIdx = index.posts.findIndex(p => p.slug === slug);
+  const postEntry = { slug, title: meta.title, date: meta.date, tags: meta.tags, excerpt };
+
+  if (existingIdx >= 0) {
+    index.posts[existingIdx] = postEntry;
+  } else {
+    index.posts.push(postEntry);
+  }
+  await putBlogIndex(bucket, index);
+
+  return {
+    slug,
+    title: meta.title,
+    url: `https://akogan.dev/blog/${slug}`,
+    action: existingIdx >= 0 ? 'Updated' : 'Published',
+  };
+}
+
+// ── Delete a post and all its stored assets ──────────────────────────────────
+export async function deletePost(bucket, slug) {
+  const listed = await bucket.list({ prefix: `blog/${slug}/` });
+  await Promise.all(listed.objects.map(o => bucket.delete(o.key)));
+
+  const index = await getBlogIndex(bucket);
+  const before = index.posts.length;
+  index.posts = index.posts.filter(p => p.slug !== slug);
+  await putBlogIndex(bucket, index);
+
+  return { slug, deleted: index.posts.length < before };
+}
 
 // ── R2 index / storage ───────────────────────────────────────────────────────
 

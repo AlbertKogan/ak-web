@@ -4,8 +4,9 @@ main = "src/worker/index.js"
 
 [vars]
 ALLOWED_USER_ID = "271658515"
-# BLOG_ENABLED = "true"   # uncomment to enable /blog routes in production
+BLOG_ENABLED = "true"
 # WEBHOOK_SECRET is a secret — set via: wrangler secret put WEBHOOK_SECRET
+# PUBLISH_TOKEN is a secret — set via: wrangler secret put PUBLISH_TOKEN
 
 [assets]
 directory = "./dist"

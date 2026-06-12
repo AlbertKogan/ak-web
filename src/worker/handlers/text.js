@@ -1,6 +1,6 @@
 import { tg, captionPrompt } from '../lib/telegram.js';
-import { getState, setState } from '../lib/state.js';
-import { slugify } from '../lib/r2.js';
+import { getState, setState, clearState } from '../lib/state.js';
+import { slugify, deleteStagedFiles } from '../lib/r2.js';
 import { finalizeUpload } from './finalize.js';
 
 export async function handleText(update, env) {
@@ -13,6 +13,20 @@ export async function handleText(update, env) {
 
   const state = await getState(env.UPLOAD_STATE, chatId);
   if (!state) return; // no active upload, ignore
+
+  // ── /cancel: discard the active session and any staged files ───────────────
+  if (text === '/cancel') {
+    if (state.sessionId) await deleteStagedFiles(env.PHOTOS, chatId, state.sessionId);
+    await clearState(env.UPLOAD_STATE, chatId);
+    await bot.send(chatId, 'Cancelled.');
+    return;
+  }
+
+  // ── Blog post text → publish ────────────────────────────────────────────────
+  if (state.step === 'awaiting_post_text') {
+    const { finalizeBlogPost } = await import('./blog-photos.js');
+    return finalizeBlogPost(chatId, state, text, env);
+  }
 
   // ── New album name ────────────────────────────────────────────────────────
   if (state.step === 'awaiting_new_album_name') {

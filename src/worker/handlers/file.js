@@ -10,12 +10,13 @@ export async function handleFile(update, env) {
   const doc = msg.document;
   const groupId = msg.media_group_id ?? null;
 
-  // Reject compressed photos — quality is lost
+  // ── Compressed photos → blog post pipeline ──────────────────────────────────
+  // Albums need full quality (send as file); regular photo sends are treated as
+  // blog-post images — Telegram's compression already strips EXIF/GPS and
+  // downscales, which is exactly what blog images need.
   if (msg.photo) {
-    await bot.send(chatId,
-      'Please send as a <b>file</b> (Attach → File) to preserve quality. Photos get compressed by Telegram.',
-    );
-    return;
+    const { handleBlogPhoto } = await import('./blog-photos.js');
+    return handleBlogPhoto(update, env);
   }
 
   if (!doc) return;
