@@ -226,6 +226,12 @@ a { color: inherit; text-decoration: none; }
 .site-nav {
   position: fixed; top: 0; width: 100%; z-index: 50;
   display: flex; justify-content: center; align-items: center; padding: 3rem;
+  background: linear-gradient(to bottom, var(--background) 0%, rgba(5,5,5,0.85) 50%, rgba(5,5,5,0) 100%);
+  pointer-events: none;
+}
+.site-nav__wordmark { pointer-events: auto; }
+@media (max-width: 640px) {
+  .site-nav { padding: 1.25rem; }
 }
 .site-nav__wordmark {
   font-family: var(--font-headline); font-weight: 300; font-size: 10px;
