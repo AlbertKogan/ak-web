@@ -2,10 +2,17 @@ name = "ak-web"
 compatibility_date = "2026-03-22"
 main = "src/worker/index.js"
 
+# Custom domain — was attached via the Dashboard; declared here so local and
+# remote config match and `wrangler deploy` stops warning about drift.
+routes = [
+  { pattern = "akogan.dev", custom_domain = true }
+]
+
 [vars]
 ALLOWED_USER_ID = "271658515"
-# BLOG_ENABLED = "true"   # uncomment to enable /blog routes in production
+BLOG_ENABLED = "true"
 # WEBHOOK_SECRET is a secret — set via: wrangler secret put WEBHOOK_SECRET
+# PUBLISH_TOKEN is a secret — set via: wrangler secret put PUBLISH_TOKEN
 
 [assets]
 directory = "./dist"

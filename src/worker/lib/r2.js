@@ -30,11 +30,12 @@ export async function putManifest(bucket, albumId, manifest) {
 
 // sessionId = media_group_id for grouped sends, file_id for single photos.
 // This makes staging keys stable and discoverable without relying on KV consistency.
-export async function stageFile(bucket, chatId, sessionId, fileId, buffer, mimeType, exif, ext) {
+// `extra` is merged into customMetadata (e.g. { msgId } for ordering blog photos).
+export async function stageFile(bucket, chatId, sessionId, fileId, buffer, mimeType, exif, ext, extra = {}) {
   const key = `staging/${chatId}/${sessionId}/${fileId}`;
   await bucket.put(key, buffer, {
     httpMetadata: { contentType: mimeType },
-    customMetadata: { ext, exif: JSON.stringify(exif ?? {}) },
+    customMetadata: { ext, exif: JSON.stringify(exif ?? {}), ...extra },
   });
   return key;
 }
@@ -45,7 +46,13 @@ export async function listStagedFiles(bucket, chatId, sessionId) {
     key: obj.key,
     ext: obj.customMetadata?.ext ?? 'jpg',
     exif: JSON.parse(obj.customMetadata?.exif ?? '{}'),
+    msgId: obj.customMetadata?.msgId ?? null,
   }));
+}
+
+export async function deleteStagedFiles(bucket, chatId, sessionId) {
+  const listed = await bucket.list({ prefix: `staging/${chatId}/${sessionId}/` });
+  await Promise.all(listed.objects.map(o => bucket.delete(o.key)));
 }
 
 export async function moveStagedFile(bucket, stagingKey, finalKey) {

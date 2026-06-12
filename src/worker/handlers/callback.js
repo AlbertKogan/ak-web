@@ -32,6 +32,17 @@ export async function handleCallback(update, env) {
     return;
   }
 
+  // ── Blog post: use the photo caption as the post text ───────────────────────
+  if (data === 'blog:usecaption' && state.step === 'awaiting_post_text') {
+    if (!state.caption) {
+      await bot.send(chatId, 'No caption found — send the post text as a message.');
+      return;
+    }
+    const { finalizeBlogPost } = await import('./blog-photos.js');
+    await finalizeBlogPost(chatId, state, state.caption, env);
+    return;
+  }
+
   // ── Caption skip ─────────────────────────────────────────────────────────
   if (data === 'caption:skip' && state.step === 'awaiting_caption') {
     const { finalizeUpload } = await import('./finalize.js');
